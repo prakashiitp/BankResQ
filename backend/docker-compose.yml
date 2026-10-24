@@ -1,0 +1,54 @@
+
+services:
+  db:
+    image: postgres:16
+    container_name: bankresq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "BankResQ@2026"
+      POSTGRES_DB: bankresq_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - bankresq_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bankresq_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankresq-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql+psycopg://postgres:BankResQ%402026@db:5432/bankresq_db"
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m app.database.init_db &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankresq-worker
+    restart : always
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgresql+psycopg://postgres:BankResQ%402026@db:5432/bankresq_db"
+    command: ["python", "-m", "worker.worker"]
+
+volumes:
+  bankresq_data:
