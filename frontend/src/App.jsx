@@ -8,7 +8,7 @@ import {
 import "./App.css";
 
 // Change this if your EC2 public IP changes.
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://13.60.214.198:8000").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 async function api(path, options = {}) {
   let response;
